@@ -82,3 +82,6 @@ publish/
 *.mdf
 *.ldf
 *.ndf
+
+# Secrets
+appsettings.secrets.json
