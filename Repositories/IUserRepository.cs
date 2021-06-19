@@ -23,6 +23,6 @@ namespace LinkShortenerAPI.Repositories
         /// <summary>
         /// Gets user by email.
         /// </summary>
-        Task<User> Get(string email);
+        Task<User> GetByEmail(string email);
     }
 }
