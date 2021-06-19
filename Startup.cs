@@ -11,8 +11,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 using LinkShortenerAPI.Models;
+using LinkShortenerAPI.Repositories;
 
 namespace LinkShortenerAPI
 {
@@ -20,7 +22,10 @@ namespace LinkShortenerAPI
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            Configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.secrets.json")
+            .Build();
         }
 
         public IConfiguration Configuration { get; }
@@ -28,11 +33,19 @@ namespace LinkShortenerAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<DatabaseSettings>(
-            Configuration.GetSection(nameof(DatabaseSettings)));
+            var databaseSettings = new DatabaseSettings() {
+                ConnectionString = Configuration["DatabaseSettings:ConnectionString"],
+                UsersDatabaseName = Configuration["DatabaseSettings:UsersDatabaseName"],
+                LinksDatabaseName = Configuration["DatabaseSettings:LinksDatabaseName"],
+            };
 
             services.AddSingleton<DatabaseSettings>(sp =>
-              sp.GetRequiredService<IOptions<DatabaseSettings>>().Value);
+                databaseSettings);
+
+            services.AddSingleton<IMongoClient, MongoClient>(sp =>
+                new MongoClient(databaseSettings.ConnectionString));
+
+            services.AddTransient<IUserRepository, UserRepository>();
 
             services.AddControllers();
         }
