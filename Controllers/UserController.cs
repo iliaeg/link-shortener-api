@@ -74,7 +74,7 @@ namespace LinkShortenerAPI.Controllers
         [HttpGet("About")]
         public ContentResult About()
         {
-            return Content("An API for registering users in the service.");
+            return Content("An API for registering and authenticating users in the service.");
         }
 
         // Admin/test tools

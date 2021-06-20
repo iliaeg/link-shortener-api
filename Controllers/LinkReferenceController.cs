@@ -132,6 +132,15 @@ namespace LinkShortenerAPI.Controllers
         }
 
         /// <summary>
+        /// Returns short info about the api.
+        /// </summary>
+        [HttpGet("About")]
+        public ContentResult About()
+        {
+            return Content("An API for getting short links.");
+        }
+
+        /// <summary>
         /// Validates request and returns error in case of failure and null otherwise.
         /// </summary>
         private JsonErrorResult RequestValidationError(string authorizationHeader, out string userId, out ObjectId userObjectId)
