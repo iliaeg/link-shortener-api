@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using MongoDB.Bson;
 
 using LinkShortenerAPI.Repositories;
@@ -96,11 +95,6 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonErrorResult("Link reference for specified short link does not exist.", HttpStatusCode.BadRequest);
             }
 
-            //if (userObjectId != linkRef.UserId)
-            //{
-            //    return new JsonErrorResult("Short link does not belong to current user.", HttpStatusCode.Unauthorized);
-            //}
-
             lock (LockerForIncrement)
             {
                 linkReferenceRepository.IncreaseShortLinkCounter(linkRef.Id);
@@ -124,9 +118,20 @@ namespace LinkShortenerAPI.Controllers
 
             var linkRefs = await linkReferenceRepository.GetLinks(userObjectId, limit, start);
 
-            return new JsonResult(linkRefs);
+            var links =
+                from linkRef in linkRefs
+                select new {
+                    OriginalLink = linkRef.OriginalLink,
+                    ShortLink = linkRef.ShortLink,
+                    Counter = linkRef.ShortLinkClickCounter,
+                };
+
+            return new JsonResult(links);
         }
 
+        /// <summary>
+        /// Validates request and returns error in case of failure and null otherwise.
+        /// </summary>
         private JsonErrorResult RequestValidationError(string authorizationHeader, out string userId, out ObjectId userObjectId)
         {
             userId = null;
