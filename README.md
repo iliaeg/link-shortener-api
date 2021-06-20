@@ -20,7 +20,7 @@ API capabilities:
 2. Authenticate by passing email:pasword in base64 format with Basic authorization header to the `api/v1/users/auth` endpoint.
     And use the returned string as Basic authorization header for the following requests.
     
-## Links shortening
+## Getting short links
 1. Get existing or create a new short link by sending json with the following structure
     ```
     {"url": "<original url>"}
