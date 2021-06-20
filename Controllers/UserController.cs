@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 
@@ -14,7 +15,7 @@ namespace LinkShortenerAPI.Controllers
     /// <summary>
     /// User management controller.
     /// </summary>
-    /// <remarks>For simplicity, uses ObjectId as the authentication token.</remarks>
+    /// <remarks>For simplicity, uses Basic authorization with ObjectId as the authentication token.</remarks>
     [ApiController]
     [Route("api/v{version:apiVersion}/users")]
     [Route("api/users")]
