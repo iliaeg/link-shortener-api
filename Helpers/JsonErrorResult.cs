@@ -38,7 +38,7 @@ namespace LinkShortenerAPI.Helpers
         /// <param name="errorMessage">Error message.</param>
         /// <param name="statusCode">Http status code of the error.</param>
         public JsonErrorResult(string errorMessage, HttpStatusCode statusCode)
-            : base(new { error = errorMessage })
+            : base(new { error = new { code = statusCode.ToString(), message = errorMessage } })
         {
             this.statusCode = statusCode;
         }
