@@ -42,6 +42,14 @@ namespace LinkShortenerAPI
             services.AddSingleton<DatabaseSettings>(sp =>
                 databaseSettings);
 
+            var urlSettings = new UrlSettings()
+            {
+                BaseUrl = Configuration["BaseUrl"],
+            };
+
+            services.AddSingleton<UrlSettings>(sp =>
+                urlSettings);
+
             services.AddSingleton<IMongoClient, MongoClient>(sp =>
                 new MongoClient(databaseSettings.ConnectionString));
 

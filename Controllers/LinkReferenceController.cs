@@ -25,13 +25,15 @@ namespace LinkShortenerAPI.Controllers
         private static readonly object LockerForCreation = new object();
         private static readonly object LockerForIncrement = new object();
         private readonly ILinkReferenceRepository linkReferenceRepository;
+        private readonly string baseUrl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LinkReferenceController"/> class.
         /// </summary>
-        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository)
+        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository, UrlSettings urlSettings)
         {
             this.linkReferenceRepository = linkReferenceRepository;
+            baseUrl = urlSettings.BaseUrl;
         }
 
         /// <summary>
@@ -65,7 +67,7 @@ namespace LinkShortenerAPI.Controllers
                 linkRef = new LinkReference()
                 {
                     OriginalLink = shortLinkRequest.Url,
-                    ShortLink = LinkShortener.CreateShortLink(),
+                    ShortLink = string.Concat(baseUrl, '/', LinkShortener.CreateShortLink()),
                     LinkIndex = LinkShortener.Index.Value,
                     UserId = userObjectId,
                 };
