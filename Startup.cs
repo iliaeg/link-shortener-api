@@ -46,6 +46,7 @@ namespace LinkShortenerAPI
                 new MongoClient(databaseSettings.ConnectionString));
 
             services.AddTransient<IUserRepository, UserRepository>();
+            services.AddTransient<ILinkReferenceRepository, LinkReferenceRepository>();
 
             services.AddControllers();
 
