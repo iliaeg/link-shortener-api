@@ -86,7 +86,7 @@ namespace LinkShortenerAPI.Controllers
         {
             if (!ObjectId.TryParse(id, out ObjectId objectId))
             {
-                return new JsonErrorResult("User id is invalid.", HttpStatusCode.BadRequest);
+                return new JsonErrorResult("User id is invalid or not specified.", HttpStatusCode.BadRequest);
             }
 
             var user = await userRepository.Get(objectId);
