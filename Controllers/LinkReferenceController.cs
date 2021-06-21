@@ -1,22 +1,20 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using MongoDB.Bson;
 
 using LinkShortenerAPI.Repositories;
 using LinkShortenerAPI.Models;
 using LinkShortenerAPI.Helpers;
+using MongoDB.Driver;
 
 namespace LinkShortenerAPI.Controllers
 {
     /// <summary>
-    /// Link management controller.
+    /// Link reference management controller.
     /// </summary>
     /// <remarks>Gets user information from the <see cref="HttpContext"/>.</remarks>
     [ApiController]
@@ -29,15 +27,17 @@ namespace LinkShortenerAPI.Controllers
         private static readonly object LockerForCreation = new object();
         private static readonly object LockerForIncrement = new object();
         private readonly ILinkReferenceRepository linkReferenceRepository;
+        private readonly ILinksCounterRepository linksCounterRepository;
         private readonly IUserRepository userRepository;
         private readonly string baseUrl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LinkReferenceController"/> class.
         /// </summary>
-        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository, IUserRepository userRepository, UrlSettings urlSettings)
+        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository, ILinksCounterRepository linksCounterRepository, IUserRepository userRepository, UrlSettings urlSettings)
         {
             this.linkReferenceRepository = linkReferenceRepository;
+            this.linksCounterRepository = linksCounterRepository;
             this.userRepository = userRepository;
             baseUrl = urlSettings.BaseUrl;
         }
@@ -57,22 +57,15 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonResult(linkRef.ShortLink);
             }
 
-            lock (LockerForCreation)
-            {
-                // Set LinkShortener.Index if necessary.
-                if (!LinkShortener.Index.HasValue)
-                {
-                    LinkShortener.Index = linkReferenceRepository.GetLastIndex();
-                }
+            var counter = linksCounterRepository.IncrementCounter();
 
-                linkRef = new LinkReference()
-                {
-                    OriginalLink = shortLinkRequest.Url,
-                    ShortLink = string.Concat(baseUrl, '/', LinkShortener.CreateShortLink()),
-                    LinkIndex = LinkShortener.Index.Value,
-                    UserId = user.Id,
-                };
-            }
+            linkRef = new LinkReference()
+            {
+                OriginalLink = shortLinkRequest.Url,
+                ShortLink = string.Concat(baseUrl, '/', LinkShortener.CreateShortLink(counter.Value)),
+                LinkIndex = counter.Value,
+                UserId = user.Id,
+            };
 
             await linkReferenceRepository.Create(linkRef);
             return new JsonResult(linkRef.ShortLink);
@@ -91,10 +84,7 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonErrorResult("Link reference for specified short link does not exist.", HttpStatusCode.BadRequest);
             }
 
-            lock (LockerForIncrement)
-            {
-                linkReferenceRepository.IncreaseShortLinkCounter(linkRef.Id);
-            }
+            linkReferenceRepository.IncrementShortLinkCounter(linkRef.Id);
 
             return new JsonResult(linkRef.OriginalLink);
         }

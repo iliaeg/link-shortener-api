@@ -61,11 +61,13 @@ namespace LinkShortenerAPI.Repositories
         }
 
         /// <inheritdoc/>
-        public void IncreaseShortLinkCounter(ObjectId objectId)
+        public void IncrementShortLinkCounter(ObjectId objectId)
         {
             var filter = Builders<LinkReference>.Filter.Eq(l => l.Id, objectId);
             var update = Builders<LinkReference>.Update.Inc("ShortLinkClickCounter", 1);
-            linkRefs.UpdateOneAsync(filter, update).Wait();
+
+            // atomic operation
+            linkRefs.FindOneAndUpdate(filter, update);
         }
 
         /// <inheritdoc/>

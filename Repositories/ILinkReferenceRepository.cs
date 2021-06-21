@@ -32,9 +32,10 @@ namespace LinkShortenerAPI.Repositories
         ulong? GetLastIndex();
 
         /// <summary>
-        /// Increases short link counter.
+        /// Increments short link counter.
         /// </summary>
-        void IncreaseShortLinkCounter(ObjectId objectId);
+        /// <remarks>Atomic operation in terms of mongodb.</remarks>
+        void IncrementShortLinkCounter(ObjectId objectId);
 
         /// <summary>
         /// Gets links created by specific user.
