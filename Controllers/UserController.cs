@@ -43,6 +43,8 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonErrorResult("User with specified email already exists.", HttpStatusCode.BadRequest);
             }
 
+            user.Password = PasswordWithSaltHasher.HashWithSaltGenerate(user.Password);
+
             var id = await userRepository.Create(user);
             return new JsonResult(id.ToString());
         }
@@ -59,7 +61,7 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonErrorResult("Specified user not found.", HttpStatusCode.Unauthorized);
             }
 
-            if (authenticationRequest.Password != user.Password)
+            if (!PasswordWithSaltHasher.HashWithSaltVerify(authenticationRequest.Password, user.Password))
             {
                 return new JsonErrorResult("Password is incorrect.", HttpStatusCode.Unauthorized);
             }
