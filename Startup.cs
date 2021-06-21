@@ -1,16 +1,9 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 using LinkShortenerAPI.Models;
@@ -53,6 +46,14 @@ namespace LinkShortenerAPI
             services.AddSingleton<IMongoClient, MongoClient>(sp =>
                 new MongoClient(databaseSettings.ConnectionString));
 
+            // Cookie auth setup
+            services.AddAuthentication("CookieAuth")
+                .AddCookie("CookieAuth", options =>
+                {
+                    options.LoginPath = new Microsoft.AspNetCore.Http.PathString("/api/v1/users/login");
+                    options.ExpireTimeSpan = TimeSpan.FromHours(2);
+                });
+
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<ILinkReferenceRepository, LinkReferenceRepository>();
 
@@ -73,6 +74,7 @@ namespace LinkShortenerAPI
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

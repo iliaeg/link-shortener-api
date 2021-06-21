@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Collections.Generic;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 using MongoDB.Bson;
 
 using LinkShortenerAPI.Repositories;
@@ -48,10 +48,10 @@ namespace LinkShortenerAPI.Controllers
         }
 
         /// <summary>
-        /// Authenticates a user.
+        /// Provides an option to log in. Authenticates a user.
         /// </summary>
-        [HttpPost("Auth")]
-        public async Task<IActionResult> Authentication(AuthenticationRequest authenticationRequest)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(AuthenticationRequest authenticationRequest)
         {
             var user = await userRepository.GetByEmail(authenticationRequest.Email);
             if (user is null)
@@ -64,8 +64,29 @@ namespace LinkShortenerAPI.Controllers
                 return new JsonErrorResult("Password is incorrect.", HttpStatusCode.Unauthorized);
             }
 
-            return new JsonResult(user.Id.ToString());
+            // Create claim for authentication
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, authenticationRequest.Email),
+            };
 
+            var identity = new ClaimsIdentity(claims, "login");
+            var principal = new ClaimsPrincipal(identity);
+
+            // Write auth cookies into context
+            await HttpContext.SignInAsync("CookieAuth", principal);
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Provides an option to log out.
+        /// </summary>
+        [HttpGet("Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync("CookieAuth");
+            return NoContent();
         }
 
         /// <summary>
@@ -75,38 +96,6 @@ namespace LinkShortenerAPI.Controllers
         public ContentResult About()
         {
             return Content("An API for registering and authenticating users in the service.");
-        }
-
-        // Admin/test tools
-
-        /// <summary>
-        /// Gets user by id.
-        /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(string id)
-        {
-            if (!ObjectId.TryParse(id, out ObjectId objectId))
-            {
-                return new JsonErrorResult("User id is invalid or not specified.", HttpStatusCode.BadRequest);
-            }
-
-            var user = await userRepository.Get(objectId);
-            return new JsonResult(user);
-        }
-
-        /// <summary>
-        /// Gets user by email.
-        /// </summary>
-        [HttpGet("ByEmail/{email}")]
-        public async Task<IActionResult> GetByEmail(string email)
-        {
-            if (email is null)
-            {
-                return new JsonErrorResult("Email is null.", HttpStatusCode.BadRequest);
-            }
-
-            var user = await userRepository.GetByEmail(email);
-            return new JsonResult(user);
         }
     }
 }
