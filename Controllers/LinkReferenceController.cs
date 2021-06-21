@@ -18,7 +18,7 @@ namespace LinkShortenerAPI.Controllers
     /// <summary>
     /// Link management controller.
     /// </summary>
-    /// <remarks>For simplicity, uses Basic authorization with ObjectId as the authentication token.</remarks>
+    /// <remarks>Gets user information from the <see cref="HttpContext"/>.</remarks>
     [ApiController]
     [Authorize] // Require authenticated requests.
     [Route("api/v{version:apiVersion}/links")]
@@ -130,7 +130,7 @@ namespace LinkShortenerAPI.Controllers
         }
 
         /// <summary>
-        /// Gets user from the <see cref="HttpContext.User.Claims"/>.
+        /// Gets user from the <see cref="HttpContext"/>.
         /// </summary>
         private async Task<User> GetUserFromContextAsync(HttpContext httpContext)
         {

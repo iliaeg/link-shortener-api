@@ -15,7 +15,7 @@ namespace LinkShortenerAPI.Controllers
     /// <summary>
     /// User management controller.
     /// </summary>
-    /// <remarks>For simplicity, uses Basic authorization with ObjectId as the authentication token.</remarks>
+    /// <remarks>Uses cookies authorization.</remarks>
     [ApiController]
     [Route("api/v{version:apiVersion}/users")]
     [Route("api/users")]
