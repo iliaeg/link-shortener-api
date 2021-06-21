@@ -56,6 +56,7 @@ namespace LinkShortenerAPI
 
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<ILinkReferenceRepository, LinkReferenceRepository>();
+            services.AddTransient<ILinksCounterRepository, LinksCounterRepository>();
 
             services.AddControllers();
 
