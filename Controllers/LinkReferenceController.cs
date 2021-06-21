@@ -45,7 +45,7 @@ namespace LinkShortenerAPI.Controllers
         /// <summary>
         /// Gets existing or creates a new link reference by original link in repository.
         /// </summary>
-        [HttpGet("short")]
+        [HttpPost("short")]
         public async Task<IActionResult> GetShortByOriginal([FromBody]ShortLinkRequest shortLinkRequest)
         {
             var user = await GetUserFromContextAsync(HttpContext);
@@ -74,7 +74,7 @@ namespace LinkShortenerAPI.Controllers
         /// <summary>
         /// Gets original link by short and increase click counter.
         /// </summary>
-        [HttpGet("original")]
+        [HttpPost("original")]
         public async Task<IActionResult> GetOriginalByShort([FromBody] ShortLinkRequest shortLinkRequest)
         {
             var linkRef = await linkReferenceRepository.GetByShort(shortLinkRequest.Url);
