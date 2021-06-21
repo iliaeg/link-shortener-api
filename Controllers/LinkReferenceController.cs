@@ -3,7 +3,10 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 using LinkShortenerAPI.Repositories;
@@ -17,6 +20,7 @@ namespace LinkShortenerAPI.Controllers
     /// </summary>
     /// <remarks>For simplicity, uses Basic authorization with ObjectId as the authentication token.</remarks>
     [ApiController]
+    [Authorize] // Require authenticated requests.
     [Route("api/v{version:apiVersion}/links")]
     [Route("api/links")]
     [ApiVersion("1.0")]
@@ -25,14 +29,16 @@ namespace LinkShortenerAPI.Controllers
         private static readonly object LockerForCreation = new object();
         private static readonly object LockerForIncrement = new object();
         private readonly ILinkReferenceRepository linkReferenceRepository;
+        private readonly IUserRepository userRepository;
         private readonly string baseUrl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LinkReferenceController"/> class.
         /// </summary>
-        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository, UrlSettings urlSettings)
+        public LinkReferenceController(ILinkReferenceRepository linkReferenceRepository, IUserRepository userRepository, UrlSettings urlSettings)
         {
             this.linkReferenceRepository = linkReferenceRepository;
+            this.userRepository = userRepository;
             baseUrl = urlSettings.BaseUrl;
         }
 
@@ -42,12 +48,7 @@ namespace LinkShortenerAPI.Controllers
         [HttpGet("short")]
         public async Task<IActionResult> GetShortByOriginal([FromBody]ShortLinkRequest shortLinkRequest)
         {
-            var error = RequestValidationError(Request.Headers["Authorization"], out string userId, out ObjectId userObjectId);
-
-            if (error != null)
-            {
-                return error;
-            }
+            var user = await GetUserFromContextAsync(HttpContext);
 
             var linkRef = await linkReferenceRepository.GetByOriginal(shortLinkRequest.Url);
 
@@ -69,7 +70,7 @@ namespace LinkShortenerAPI.Controllers
                     OriginalLink = shortLinkRequest.Url,
                     ShortLink = string.Concat(baseUrl, '/', LinkShortener.CreateShortLink()),
                     LinkIndex = LinkShortener.Index.Value,
-                    UserId = userObjectId,
+                    UserId = user.Id,
                 };
             }
 
@@ -83,13 +84,6 @@ namespace LinkShortenerAPI.Controllers
         [HttpGet("original")]
         public async Task<IActionResult> GetOriginalByShort([FromBody] ShortLinkRequest shortLinkRequest)
         {
-            var error = RequestValidationError(Request.Headers["Authorization"], out string userId, out ObjectId userObjectId);
-
-            if (error != null)
-            {
-                return error;
-            }
-
             var linkRef = await linkReferenceRepository.GetByShort(shortLinkRequest.Url);
 
             if (linkRef is null)
@@ -111,14 +105,9 @@ namespace LinkShortenerAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetLinks([FromQuery(Name = "limit")] int? limit = null, [FromQuery(Name = "start")] int? start = null)
         {
-            var error = RequestValidationError(Request.Headers["Authorization"], out string userId, out ObjectId userObjectId);
+            var user = await GetUserFromContextAsync(HttpContext);
 
-            if (error != null)
-            {
-                return error;
-            }
-
-            var linkRefs = await linkReferenceRepository.GetLinks(userObjectId, limit, start);
+            var linkRefs = await linkReferenceRepository.GetLinks(user.Id, limit, start);
 
             var links =
                 from linkRef in linkRefs
@@ -141,29 +130,14 @@ namespace LinkShortenerAPI.Controllers
         }
 
         /// <summary>
-        /// Validates request and returns error in case of failure and null otherwise.
+        /// Gets user from the <see cref="HttpContext.User.Claims"/>.
         /// </summary>
-        private JsonErrorResult RequestValidationError(string authorizationHeader, out string userId, out ObjectId userObjectId)
+        private async Task<User> GetUserFromContextAsync(HttpContext httpContext)
         {
-            userId = null;
-            userObjectId = default;
-            try
-            {
-                var authHeader = AuthenticationHeaderValue.Parse(authorizationHeader);
-                userId = authHeader.Parameter;
-            }
-            catch (Exception)
-            {
-                return new JsonErrorResult("Authentication header value is invalid or not specified.", HttpStatusCode.Unauthorized);
-            }
+            var email = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email).Value;
 
-            // Here should be one more case if userId is valid, but user with such id does not exist.
-            if (!ObjectId.TryParse(userId, out userObjectId))
-            {
-                return new JsonErrorResult("Authorization failed. User id is invalid or not specified.", HttpStatusCode.Unauthorized);
-            }
-
-            return null;
+            var user = await userRepository.GetByEmail(email);
+            return user;
         }
     }
 }
